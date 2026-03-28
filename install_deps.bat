@@ -1,63 +1,44 @@
 @echo off
-REM GIMP Rembg - Install Dependencies
-REM Creates an isolated venv inside this folder with rembg installed
+REM install_deps.bat — Install rembg into the plugin's venv
+REM Run this if you prefer the terminal over Rembg > Setup... in GIMP.
 
-echo ============================================
-echo  GIMP Rembg - Install Dependencies
-echo ============================================
-echo.
+set SCRIPT_DIR=%~dp0
+set VENV_DIR=%SCRIPT_DIR%venv
+
+echo === GIMP Rembg Setup ===
 
 REM Check Python
-python --version >nul 2>&1
-if errorlevel 1 (
-    python3 --version >nul 2>&1
-    if errorlevel 1 (
-        echo ERROR: Python not found!
-        echo Install Python 3.8+ from https://python.org
-        pause
-        exit /b 1
-    )
-    set PYTHON=python3
-) else (
-    set PYTHON=python
+where python >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Error: Python not found. Install it from https://python.org
+    pause
+    exit /b 1
 )
 
-echo Using: %PYTHON%
-echo.
+for /f "tokens=*" %%i in ('python --version') do set PYVER=%%i
+echo Using: python (%PYVER%)
 
 REM Remove old venv
-if exist venv (
+if exist "%VENV_DIR%" (
     echo Removing old venv...
-    rmdir /s /q venv
+    rmdir /s /q "%VENV_DIR%"
 )
 
 REM Create venv
-echo Creating isolated environment...
-%PYTHON% -m venv venv
-if errorlevel 1 (
-    echo ERROR: Failed to create venv
-    pause
-    exit /b 1
-)
+echo Creating venv...
+python -m venv "%VENV_DIR%"
 
-REM Install deps
-echo Installing rembg and dependencies...
-venv\Scripts\pip.exe install --upgrade pip
-venv\Scripts\pip.exe install pillow onnxruntime rembg
-if errorlevel 1 (
-    echo ERROR: pip install failed
-    pause
-    exit /b 1
-)
+REM Install
+echo Upgrading pip...
+"%VENV_DIR%\Scripts\pip.exe" install --upgrade pip
+
+echo Installing rembg (this may take a few minutes)...
+"%VENV_DIR%\Scripts\pip.exe" install pillow onnxruntime rembg
 
 REM Verify
-echo.
 echo Verifying...
-venv\Scripts\python.exe -c "import rembg; print('rembg', rembg.__version__, 'OK')"
+"%VENV_DIR%\Scripts\python.exe" -c "import rembg; print(f'rembg {rembg.__version__} installed!')"
 
 echo.
-echo ============================================
-echo  Done! Restart GIMP.
-echo  Then: Filters > Remove Background (AI)...
-echo ============================================
+echo Done! Restart GIMP and use Rembg ^> Remove Background...
 pause
